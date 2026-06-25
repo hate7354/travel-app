@@ -147,6 +147,10 @@ a {
   align-items: center;
 }
 
+.grow {
+  flex: 1 1 240px;
+}
+
 .btn {
   display: inline-flex;
   min-height: 40px;
@@ -218,6 +222,16 @@ a {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
+}
+
+.plain-button {
+  display: grid;
+  width: 100%;
+  gap: 4px;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
 }
 
 .cover {

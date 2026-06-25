@@ -1,0 +1,60 @@
+"use client";
+
+import { loadNaverMapScript } from "./naverMapLoader";
+
+export type NaverGeocodeResult = {
+  label: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+};
+
+type GeocodeAddress = {
+  roadAddress?: string;
+  jibunAddress?: string;
+  englishAddress?: string;
+  x: string;
+  y: string;
+};
+
+type GeocodeResponse = {
+  v2?: {
+    addresses?: GeocodeAddress[];
+  };
+};
+
+export async function searchNaverAddress(query: string): Promise<NaverGeocodeResult[]> {
+  const naverApi = await loadNaverMapScript();
+  const service = (naverApi.maps as unknown as {
+    Service?: {
+      geocode: (
+        options: { query: string },
+        callback: (status: string, response: GeocodeResponse) => void
+      ) => void;
+      Status?: { OK?: string };
+    };
+  }).Service;
+
+  if (!service?.geocode) {
+    throw new Error("네이버 주소 검색 모듈을 불러오지 못했습니다.");
+  }
+
+  return new Promise((resolve, reject) => {
+    service.geocode({ query }, (status, response) => {
+      if (service.Status?.OK && status !== service.Status.OK) {
+        reject(new Error("주소 검색 실패"));
+        return;
+      }
+
+      const addresses = response.v2?.addresses ?? [];
+      resolve(
+        addresses.slice(0, 5).map((item) => ({
+          label: item.roadAddress || item.jibunAddress || item.englishAddress || query,
+          address: item.roadAddress || item.jibunAddress || query,
+          latitude: Number(item.y),
+          longitude: Number(item.x)
+        }))
+      );
+    });
+  });
+}

@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { api } from "@/lib/apiClient";
+import { LocationSearch } from "../map/LocationSearch";
 
 export function TodoForm({
   tripId,
@@ -85,6 +86,15 @@ export function TodoForm({
           <input id="todoAddress" value={address} onChange={(event) => setAddress(event.target.value)} />
         </div>
       </div>
+      <LocationSearch
+        label="일정 장소"
+        onSelect={(location) => {
+          setPlaceName(location.label);
+          setAddress(location.address);
+          setLatitude(String(location.latitude));
+          setLongitude(String(location.longitude));
+        }}
+      />
       <div className="form-grid">
         <div className="field">
           <label htmlFor="todoLatitude">위도</label>

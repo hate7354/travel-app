@@ -8,6 +8,7 @@ import type { Trip } from "@/types/trip";
 import type { TripTodo } from "@/types/todo";
 import type { AppUser, TripMember } from "@/types/user";
 import { navigateTo } from "../RouterShell";
+import { LocationSearch } from "../map/LocationSearch";
 import { TripMap } from "../map/TripMap";
 import { ParticipantForm } from "../participant/ParticipantForm";
 import { ParticipantList } from "../participant/ParticipantList";
@@ -200,6 +201,15 @@ export function TripDetail({ tripId, user }: { tripId: string; user: AppUser }) 
               />
             </div>
           </div>
+          <LocationSearch
+            label="숙소"
+            onSelect={(location) => {
+              setAccommodationName(location.label);
+              setAccommodationAddress(location.address);
+              setLatitude(String(location.latitude));
+              setLongitude(String(location.longitude));
+            }}
+          />
           <div className="form-grid">
             <div className="field">
               <label htmlFor="tripLat">숙소 위도</label>

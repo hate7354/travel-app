@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { api } from "@/lib/apiClient";
 import type { Participant } from "@/types/participant";
+import { LocationSearch } from "../map/LocationSearch";
 
 export function ParticipantForm({
   tripId,
@@ -71,6 +72,15 @@ export function ParticipantForm({
         <label htmlFor="address">주소</label>
         <input id="address" value={address} onChange={(event) => setAddress(event.target.value)} />
       </div>
+      <LocationSearch
+        label="출발지"
+        onSelect={(location) => {
+          setPlaceName(location.label);
+          setAddress(location.address);
+          setLatitude(String(location.latitude));
+          setLongitude(String(location.longitude));
+        }}
+      />
       <div className="form-grid">
         <div className="field">
           <label htmlFor="latitude">위도</label>
