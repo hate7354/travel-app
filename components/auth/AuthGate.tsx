@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { api } from "@/lib/apiClient";
 import type { AppUser } from "@/types/user";
+import { LoadingView } from "../ui/LoadingView";
 
 export function AuthGate({ children }: { children: (user: AppUser, onLogout: () => void) => React.ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
@@ -40,11 +41,7 @@ export function AuthGate({ children }: { children: (user: AppUser, onLogout: () 
   }
 
   if (loading) {
-    return (
-      <main className="page">
-        <p className="muted">로그인 상태 확인 중</p>
-      </main>
-    );
+    return <LoadingView label="로그인 상태 확인 중" />;
   }
 
   if (user) return <>{children(user, logout)}</>;

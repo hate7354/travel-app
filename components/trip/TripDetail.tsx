@@ -14,6 +14,7 @@ import { ParticipantForm } from "../participant/ParticipantForm";
 import { ParticipantList } from "../participant/ParticipantList";
 import { TodoForm } from "../todo/TodoForm";
 import { TodoList } from "../todo/TodoList";
+import { LoadingView } from "../ui/LoadingView";
 
 type TripPayload = {
   trip: Trip;
@@ -34,6 +35,8 @@ export function TripDetail({ tripId, user }: { tripId: string; user: AppUser }) 
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
+  const [mode, setMode] = useState<"view" | "edit">("view");
+  const [deleteConfirm, setDeleteConfirm] = useState("");
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -94,6 +97,20 @@ export function TripDetail({ tripId, user }: { tripId: string; user: AppUser }) 
     }
   }
 
+  async function deleteTrip() {
+    if (!data || deleteConfirm !== data.trip.title) {
+      setError("여행 이름을 정확히 입력해야 삭제할 수 있습니다.");
+      return;
+    }
+
+    try {
+      await api(`/api/trips/${tripId}`, { method: "DELETE" });
+      navigateTo("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "삭제 실패");
+    }
+  }
+
   if (error) {
     return (
       <main className="page stack">
@@ -108,11 +125,7 @@ export function TripDetail({ tripId, user }: { tripId: string; user: AppUser }) 
   }
 
   if (!data) {
-    return (
-      <main className="page">
-        <p className="muted">여행 정보를 불러오는 중</p>
-      </main>
-    );
+    return <LoadingView label="여행 정보를 불러오는 중" />;
   }
 
   const { trip, participants, todos, settings, members } = data;
@@ -151,6 +164,22 @@ export function TripDetail({ tripId, user }: { tripId: string; user: AppUser }) 
           >
             초대 링크 복사
           </button>
+          <div className="tabs" role="tablist" aria-label="여행 화면 모드">
+            <button
+              className={`tab-button ${mode === "view" ? "active" : ""}`}
+              onClick={() => setMode("view")}
+              type="button"
+            >
+              보기
+            </button>
+            <button
+              className={`tab-button ${mode === "edit" ? "active" : ""}`}
+              onClick={() => setMode("edit")}
+              type="button"
+            >
+              편집
+            </button>
+          </div>
         </div>
       </section>
 
@@ -166,99 +195,136 @@ export function TripDetail({ tripId, user }: { tripId: string; user: AppUser }) 
         </div>
       </section>
 
-      <section className="split">
-        <form className="card card-pad stack" onSubmit={saveTrip}>
-          <h2 className="section-title">여행 편집</h2>
-          <div className="form-grid">
-            <div className="field">
-              <label htmlFor="editTitle">여행 이름</label>
-              <input id="editTitle" value={editTitle} onChange={(event) => setEditTitle(event.target.value)} />
-            </div>
-            <div className="field">
-              <label htmlFor="editStart">시작일</label>
-              <input id="editStart" type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
-            </div>
-            <div className="field">
-              <label htmlFor="editMeeting">모임 시간</label>
-              <input id="editMeeting" type="time" value={meetingTime} onChange={(event) => setMeetingTime(event.target.value)} />
-            </div>
+      {mode === "view" && (
+        <section className="split">
+          <div className="stack">
+            <TodoList todos={todos} />
           </div>
-          <div className="form-grid">
-            <div className="field">
-              <label htmlFor="accommodationName">숙소명</label>
-              <input
-                id="accommodationName"
-                value={accommodationName}
-                onChange={(event) => setAccommodationName(event.target.value)}
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="accommodationAddress">숙소 주소</label>
-              <input
-                id="accommodationAddress"
-                value={accommodationAddress}
-                onChange={(event) => setAccommodationAddress(event.target.value)}
-              />
-            </div>
-          </div>
-          <LocationSearch
-            label="숙소"
-            onSelect={(location) => {
-              setAccommodationName(location.label);
-              setAccommodationAddress(location.address);
-              setLatitude(String(location.latitude));
-              setLongitude(String(location.longitude));
-            }}
-          />
-          <div className="form-grid">
-            <div className="field">
-              <label htmlFor="tripLat">숙소 위도</label>
-              <input id="tripLat" value={latitude} onChange={(event) => setLatitude(event.target.value)} />
-            </div>
-            <div className="field">
-              <label htmlFor="tripLng">숙소 경도</label>
-              <input id="tripLng" value={longitude} onChange={(event) => setLongitude(event.target.value)} />
-            </div>
-          </div>
-          <button className="btn" type="submit">
-            여행 저장
-          </button>
-        </form>
-
-        <section className="card card-pad stack">
-          <h2 className="section-title">구성원 초대</h2>
-          <div className="field">
-            <label htmlFor="inviteEmail">이메일</label>
-            <input
-              id="inviteEmail"
-              type="email"
-              value={inviteEmail}
-              onChange={(event) => setInviteEmail(event.target.value)}
-            />
-          </div>
-          <button className="btn" type="button" onClick={inviteMember}>
-            초대 추가
-          </button>
-          <ul className="list">
-            {members.map((member) => (
-              <li className="list-item" key={member.id}>
-                <strong>{member.email}</strong>
-                <span className="muted">
-                  {member.role} / {member.status}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <section className="card card-pad">
+            <h2 className="section-title">구성원</h2>
+            <ul className="list">
+              {members.map((member) => (
+                <li className="list-item" key={member.id}>
+                  <strong>{member.email}</strong>
+                  <span className="muted">
+                    {member.role} / {member.status}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
         </section>
-      </section>
+      )}
 
-      <section className="split">
-        <div className="stack">
-          <TodoList todos={todos} />
-          <TodoForm tripId={tripId} todosCount={todos.length} onSaved={load} />
-        </div>
-        <ParticipantForm tripId={tripId} participant={currentParticipant} onSaved={load} />
-      </section>
+      {mode === "edit" && (
+        <>
+          <section className="split">
+            <form className="card card-pad stack" onSubmit={saveTrip}>
+              <h2 className="section-title">여행 편집</h2>
+              <div className="form-grid">
+                <div className="field">
+                  <label htmlFor="editTitle">여행 이름</label>
+                  <input id="editTitle" value={editTitle} onChange={(event) => setEditTitle(event.target.value)} />
+                </div>
+                <div className="field">
+                  <label htmlFor="editStart">시작일</label>
+                  <input id="editStart" type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+                </div>
+                <div className="field">
+                  <label htmlFor="editMeeting">모임 시간</label>
+                  <input id="editMeeting" type="time" value={meetingTime} onChange={(event) => setMeetingTime(event.target.value)} />
+                </div>
+              </div>
+              <div className="form-grid">
+                <div className="field">
+                  <label htmlFor="accommodationName">숙소명</label>
+                  <input
+                    id="accommodationName"
+                    value={accommodationName}
+                    onChange={(event) => setAccommodationName(event.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="accommodationAddress">숙소 주소</label>
+                  <input
+                    id="accommodationAddress"
+                    value={accommodationAddress}
+                    onChange={(event) => setAccommodationAddress(event.target.value)}
+                  />
+                </div>
+              </div>
+              <LocationSearch
+                label="숙소"
+                onSelect={(location) => {
+                  setAccommodationName(location.label);
+                  setAccommodationAddress(location.address);
+                  setLatitude(String(location.latitude));
+                  setLongitude(String(location.longitude));
+                }}
+              />
+              <div className="form-grid">
+                <div className="field">
+                  <label htmlFor="tripLat">숙소 위도</label>
+                  <input id="tripLat" value={latitude} onChange={(event) => setLatitude(event.target.value)} />
+                </div>
+                <div className="field">
+                  <label htmlFor="tripLng">숙소 경도</label>
+                  <input id="tripLng" value={longitude} onChange={(event) => setLongitude(event.target.value)} />
+                </div>
+              </div>
+              <button className="btn" type="submit">
+                여행 저장
+              </button>
+            </form>
+
+            <section className="card card-pad stack">
+              <h2 className="section-title">구성원 초대</h2>
+              <div className="field">
+                <label htmlFor="inviteEmail">이메일</label>
+                <input
+                  id="inviteEmail"
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(event) => setInviteEmail(event.target.value)}
+                />
+              </div>
+              <button className="btn" type="button" onClick={inviteMember}>
+                초대 추가
+              </button>
+              <ul className="list">
+                {members.map((member) => (
+                  <li className="list-item" key={member.id}>
+                    <strong>{member.email}</strong>
+                    <span className="muted">
+                      {member.role} / {member.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </section>
+
+          <section className="split">
+            <div className="stack">
+              <TodoList todos={todos} />
+              <TodoForm tripId={tripId} todosCount={todos.length} onSaved={load} />
+            </div>
+            <ParticipantForm tripId={tripId} participant={currentParticipant} onSaved={load} />
+          </section>
+
+          <section className="card card-pad stack">
+            <h2 className="section-title">여행 삭제</h2>
+            <p className="muted">삭제하려면 여행 이름을 그대로 입력.</p>
+            <div className="field">
+              <label htmlFor="deleteConfirm">여행 이름 확인</label>
+              <input id="deleteConfirm" value={deleteConfirm} onChange={(event) => setDeleteConfirm(event.target.value)} />
+            </div>
+            <button className="btn danger" disabled={deleteConfirm !== trip.title} onClick={deleteTrip} type="button">
+              여행 삭제
+            </button>
+          </section>
+        </>
+      )}
     </main>
   );
 }

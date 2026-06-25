@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { loadNaverMapScript } from "@/lib/naverMapLoader";
 import type { MapMarker } from "@/types/map";
+import { LoadingView } from "../ui/LoadingView";
 
 type Props = {
   center: { latitude: number; longitude: number };
@@ -79,7 +80,11 @@ export function NaverMap({ center, markers, polylines, zoom }: Props) {
   return (
     <div className="map-frame">
       <div ref={elementRef} className="map-canvas" />
-      {state && <div className="map-state">{state}</div>}
+      {state && (
+        <div className="map-state">
+          {state.includes("로딩") ? <LoadingView label={state} /> : state}
+        </div>
+      )}
     </div>
   );
 }

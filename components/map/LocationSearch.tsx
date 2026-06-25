@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { KeyboardEvent, useState } from "react";
 import { searchNaverAddress, type NaverGeocodeResult } from "@/lib/naverGeocode";
 
 export function LocationSearch({
@@ -15,8 +15,7 @@ export function LocationSearch({
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
+  async function submit() {
     if (!query.trim()) return;
 
     setPending(true);
@@ -32,22 +31,40 @@ export function LocationSearch({
     }
   }
 
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    submit();
+  }
+
   return (
     <div className="stack">
-      <form className="toolbar" onSubmit={submit}>
+      <div className="toolbar">
         <div className="field grow">
           <label htmlFor={`${label}-search`}>{label} 검색</label>
           <input
             id={`${label}-search`}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="장소명 또는 주소"
           />
         </div>
-        <button className="btn secondary" disabled={pending} type="submit">
+        <button
+          className="btn secondary"
+          disabled={pending}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            submit();
+          }}
+          type="button"
+        >
           {pending ? "검색 중" : "검색"}
         </button>
-      </form>
+      </div>
       {error && <p className="error">{error}</p>}
       {results.length > 0 && (
         <ul className="list">

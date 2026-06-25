@@ -230,6 +230,31 @@ export async function updateTripForUser(tripId: string, user: AppUser, input: Pa
   return updated;
 }
 
+export async function deleteTripForUser(tripId: string, user: AppUser) {
+  const data = await getTripForUser(tripId, user);
+  if (!data) return false;
+
+  const db = await getMongoDb();
+  if (db) {
+    await Promise.all([
+      db.collection("trips").deleteOne({ id: tripId }),
+      db.collection("members").deleteMany({ tripId }),
+      db.collection("participants").deleteMany({ tripId }),
+      db.collection("todos").deleteMany({ tripId }),
+      db.collection("mapSettings").deleteMany({ tripId })
+    ]);
+  } else {
+    const store = memory();
+    store.trips = store.trips.filter((trip) => trip.id !== tripId);
+    store.members = store.members.filter((member) => member.tripId !== tripId);
+    store.participants = store.participants.filter((participant) => participant.tripId !== tripId);
+    store.todos = store.todos.filter((todo) => todo.tripId !== tripId);
+    delete store.mapSettings[tripId];
+  }
+
+  return true;
+}
+
 export async function inviteMember(tripId: string, user: AppUser, emailInput: string) {
   const data = await getTripForUser(tripId, user);
   if (!data) return null;

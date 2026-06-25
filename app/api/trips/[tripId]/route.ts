@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSession } from "@/lib/server/auth";
-import { getTripForUser, getUserById, updateTripForUser } from "@/lib/server/store";
+import { deleteTripForUser, getTripForUser, getUserById, updateTripForUser } from "@/lib/server/store";
 import type { Trip } from "@/types/trip";
 
 async function currentUser(request: NextRequest) {
@@ -29,4 +29,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (!trip) return NextResponse.json({ error: "초대된 구성원만 수정할 수 있습니다." }, { status: 403 });
 
   return NextResponse.json({ trip });
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ tripId: string }> }) {
+  const user = await currentUser(request);
+  if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+
+  const { tripId } = await params;
+  const deleted = await deleteTripForUser(tripId, user);
+  if (!deleted) return NextResponse.json({ error: "초대된 구성원만 삭제할 수 있습니다." }, { status: 403 });
+
+  return NextResponse.json({ ok: true });
 }

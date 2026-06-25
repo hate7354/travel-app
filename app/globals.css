@@ -173,6 +173,30 @@ a {
   background: var(--danger);
 }
 
+.tabs {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f0f3f6;
+}
+
+.tab-button {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.tab-button.active {
+  background: white;
+  color: var(--brand-strong);
+  box-shadow: 0 1px 4px rgba(17, 24, 39, 0.1);
+}
+
 .field {
   display: grid;
   gap: 6px;
@@ -285,6 +309,40 @@ a {
 .error {
   color: var(--danger);
   font-weight: 700;
+}
+
+.loading-screen {
+  display: grid;
+  min-height: calc(100vh - 64px);
+  place-items: center;
+  padding: 24px;
+}
+
+.loading-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--muted);
+  box-shadow: var(--shadow);
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #d9dee7;
+  border-top-color: var(--brand);
+  border-radius: 999px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 860px) {
