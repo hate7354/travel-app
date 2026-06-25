@@ -1,7 +1,7 @@
 "use client";
 
 import { KeyboardEvent, useState } from "react";
-import { searchNaverAddress, type NaverGeocodeResult } from "@/lib/naverGeocode";
+import { searchNaverPlaces, type NaverGeocodeResult } from "@/lib/naverGeocode";
 
 export function LocationSearch({
   label,
@@ -21,7 +21,7 @@ export function LocationSearch({
     setPending(true);
     setError("");
     try {
-      const nextResults = await searchNaverAddress(query.trim());
+      const nextResults = await searchNaverPlaces(query.trim());
       setResults(nextResults);
       if (nextResults.length === 0) setError("검색 결과가 없습니다.");
     } catch (err) {
@@ -80,6 +80,8 @@ export function LocationSearch({
                 }}
               >
                 <strong>{result.label}</strong>
+                {result.category && <span className="muted">{result.category}</span>}
+                {result.address && <span>{result.address}</span>}
                 <span className="muted">
                   {result.latitude.toFixed(6)}, {result.longitude.toFixed(6)}
                 </span>

@@ -46,7 +46,10 @@ v0 또는 Vercel에서 이 Next.js 프로젝트를 배포한다.
 - `MONGODB_DB`
 - `AUTH_SECRET`
 - `NEXT_PUBLIC_NAVER_MAP_CLIENT_ID`
+- `NAVER_SEARCH_CLIENT_ID`
+- `NAVER_SEARCH_CLIENT_SECRET`
 
 ## 보안 메모
 
 여행 접근 권한은 API 서버에서 로그인 세션과 멤버 이메일로 검사한다.
+네이버 장소 검색 Client Secret은 서버 환경변수로만 사용한다.

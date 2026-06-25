@@ -7,6 +7,7 @@ export type NaverGeocodeResult = {
   address: string;
   latitude: number;
   longitude: number;
+  category?: string;
 };
 
 type GeocodeAddress = {
@@ -57,4 +58,19 @@ export async function searchNaverAddress(query: string): Promise<NaverGeocodeRes
       );
     });
   });
+}
+
+export async function searchNaverPlaces(query: string): Promise<NaverGeocodeResult[]> {
+  const response = await fetch(`/api/places/search?query=${encodeURIComponent(query)}`, {
+    credentials: "include"
+  });
+
+  if (!response.ok) {
+    return searchNaverAddress(query);
+  }
+
+  const data = (await response.json()) as { results?: NaverGeocodeResult[] };
+  if (data.results?.length) return data.results;
+
+  return searchNaverAddress(query);
 }
