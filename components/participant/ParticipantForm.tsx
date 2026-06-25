@@ -1,8 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { updateParticipant } from "@/lib/participants";
-import { uploadTripImage } from "@/lib/storage";
+import { api } from "@/lib/apiClient";
 import type { Participant } from "@/types/participant";
 
 export function ParticipantForm({
@@ -21,7 +20,7 @@ export function ParticipantForm({
   const [departureTime, setDepartureTime] = useState(participant.departureTime ?? "");
   const [markerColor, setMarkerColor] = useState(participant.markerColor);
   const [memo, setMemo] = useState(participant.memo ?? "");
-  const [image, setImage] = useState<File | null>(null);
+  const [profileImageUrl, setProfileImageUrl] = useState(participant.profileImageUrl ?? "");
   const [error, setError] = useState("");
 
   async function onSubmit(event: FormEvent) {
@@ -29,22 +28,20 @@ export function ParticipantForm({
     setError("");
 
     try {
-      let profileImageUrl = participant.profileImageUrl;
-      if (image) {
-        profileImageUrl = await uploadTripImage(`trips/${tripId}/participants/${participant.id}.jpg`, image);
-      }
-
-      await updateParticipant(tripId, participant.id, {
-        startLocation: {
-          name: placeName,
-          address,
-          latitude: Number(latitude),
-          longitude: Number(longitude)
-        },
-        departureTime,
-        markerColor,
-        memo,
-        profileImageUrl
+      await api(`/api/trips/${tripId}/participants/me`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          startLocation: {
+            name: placeName,
+            address,
+            latitude: Number(latitude),
+            longitude: Number(longitude)
+          },
+          departureTime,
+          markerColor,
+          memo,
+          profileImageUrl
+        })
       });
       onSaved();
     } catch (err) {
@@ -93,8 +90,8 @@ export function ParticipantForm({
         <textarea id="memo" value={memo} onChange={(event) => setMemo(event.target.value)} />
       </div>
       <div className="field">
-        <label htmlFor="profile">프로필 이미지</label>
-        <input id="profile" type="file" accept="image/*" onChange={(event) => setImage(event.target.files?.[0] ?? null)} />
+        <label htmlFor="profileImageUrl">프로필 이미지 URL</label>
+        <input id="profileImageUrl" value={profileImageUrl} onChange={(event) => setProfileImageUrl(event.target.value)} />
       </div>
       {error && <p className="error">{error}</p>}
       <button className="btn" type="submit">

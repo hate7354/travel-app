@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { InviteLoginForm } from "./auth/InviteLoginForm";
+import { AuthGate } from "./auth/AuthGate";
 import { HomePage } from "./trip/HomePage";
 import { TripDetail } from "./trip/TripDetail";
 
@@ -11,17 +12,11 @@ type Route =
   | { name: "trip"; tripId: string };
 
 function stripBasePath(pathname: string) {
-  const repoName = process.env.NEXT_PUBLIC_GITHUB_REPOSITORY_NAME;
-  if (!repoName) return pathname;
-
-  const basePath = `/${repoName}`;
-  return pathname.startsWith(basePath) ? pathname.slice(basePath.length) || "/" : pathname;
+  return pathname;
 }
 
 export function navigateTo(path: string) {
-  const repoName = process.env.NEXT_PUBLIC_GITHUB_REPOSITORY_NAME;
-  const basePath = process.env.NODE_ENV === "production" && repoName ? `/${repoName}` : "";
-  window.history.pushState({}, "", `${basePath}${path}`);
+  window.history.pushState({}, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
@@ -50,9 +45,15 @@ export function RouterShell() {
           <span>Travel Map</span>
         </button>
       </header>
-      {route.name === "invite" && <InviteLoginForm tripId={route.tripId} />}
-      {route.name === "trip" && <TripDetail tripId={route.tripId} />}
-      {route.name === "home" && <HomePage />}
+      <AuthGate>
+        {(user, onLogout) => (
+          <>
+            {route.name === "invite" && <InviteLoginForm tripId={route.tripId} />}
+            {route.name === "trip" && <TripDetail tripId={route.tripId} user={user} />}
+            {route.name === "home" && <HomePage user={user} onLogout={onLogout} />}
+          </>
+        )}
+      </AuthGate>
     </div>
   );
 }

@@ -1,8 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { createTodo } from "@/lib/todos";
-import { uploadTripImage } from "@/lib/storage";
+import { api } from "@/lib/apiClient";
 
 export function TodoForm({
   tripId,
@@ -20,7 +19,7 @@ export function TodoForm({
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [memo, setMemo] = useState("");
-  const [image, setImage] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
   const [error, setError] = useState("");
 
   async function onSubmit(event: FormEvent) {
@@ -28,27 +27,25 @@ export function TodoForm({
     setError("");
 
     try {
-      let imageUrl: string | undefined;
-      if (image) {
-        imageUrl = await uploadTripImage(`trips/${tripId}/todos/${Date.now()}.jpg`, image);
-      }
-
-      await createTodo(tripId, {
-        tripId,
-        title,
-        time,
-        location:
-          latitude && longitude
-            ? {
-                name: placeName,
-                address,
-                latitude: Number(latitude),
-                longitude: Number(longitude)
-              }
-            : undefined,
-        memo,
-        imageUrl,
-        sortOrder: todosCount + 1
+      await api(`/api/trips/${tripId}/todos`, {
+        method: "POST",
+        body: JSON.stringify({
+          tripId,
+          title,
+          time,
+          location:
+            latitude && longitude
+              ? {
+                  name: placeName,
+                  address,
+                  latitude: Number(latitude),
+                  longitude: Number(longitude)
+                }
+              : undefined,
+          memo,
+          imageUrl,
+          sortOrder: todosCount + 1
+        })
       });
 
       setTitle("");
@@ -58,7 +55,7 @@ export function TodoForm({
       setLatitude("");
       setLongitude("");
       setMemo("");
-      setImage(null);
+      setImageUrl("");
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "일정 저장 실패");
@@ -67,7 +64,7 @@ export function TodoForm({
 
   return (
     <form className="card card-pad stack" onSubmit={onSubmit}>
-      <h2 className="section-title">owner 일정 추가</h2>
+      <h2 className="section-title">일정 추가</h2>
       <div className="form-grid">
         <div className="field">
           <label htmlFor="todoTitle">제목</label>
@@ -103,8 +100,8 @@ export function TodoForm({
         <textarea id="todoMemo" value={memo} onChange={(event) => setMemo(event.target.value)} />
       </div>
       <div className="field">
-        <label htmlFor="todoImage">이미지</label>
-        <input id="todoImage" type="file" accept="image/*" onChange={(event) => setImage(event.target.files?.[0] ?? null)} />
+        <label htmlFor="todoImageUrl">이미지 URL</label>
+        <input id="todoImageUrl" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} />
       </div>
       {error && <p className="error">{error}</p>}
       <button className="btn" type="submit">

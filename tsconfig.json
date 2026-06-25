@@ -23,5 +23,15 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "lib/firebase.ts",
+    "lib/firebaseFallback.ts",
+    "lib/mapSettings.ts",
+    "lib/participants.ts",
+    "lib/storage.ts",
+    "lib/todos.ts",
+    "lib/tripAuth.ts",
+    "lib/trips.ts"
+  ]
 }

@@ -1,31 +1,19 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { saveTripSession } from "@/lib/session";
-import { joinTripWithNameAndPin } from "@/lib/tripAuth";
-import { getTripById } from "@/lib/trips";
-import type { Trip } from "@/types/trip";
+import { useState } from "react";
+import { api } from "@/lib/apiClient";
 import { navigateTo } from "../RouterShell";
 
 export function InviteLoginForm({ tripId }: { tripId: string }) {
-  const [trip, setTrip] = useState<Trip | null>(null);
-  const [name, setName] = useState("");
-  const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
-  useEffect(() => {
-    getTripById(tripId).then(setTrip).catch((err: Error) => setError(err.message));
-  }, [tripId]);
-
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
+  async function join() {
     setPending(true);
     setError("");
 
     try {
-      const session = await joinTripWithNameAndPin(tripId, name, pin);
-      saveTripSession(session);
+      await api(`/api/trips/${tripId}/join`, { method: "POST" });
       navigateTo(`/trips/${tripId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "입장 실패");
@@ -39,42 +27,20 @@ export function InviteLoginForm({ tripId }: { tripId: string }) {
       <section className="split">
         <div className="hero">
           <div>
-            <h1>{trip?.title ?? "여행 초대"}</h1>
-            <p>{trip ? `${trip.startDate} ${trip.meetingTime ?? ""}` : "여행 정보를 불러오는 중"}</p>
+            <h1>여행 초대</h1>
+            <p>초대된 이메일 계정만 입장 가능.</p>
           </div>
         </div>
-        <form className="card card-pad stack" onSubmit={onSubmit}>
+        <section className="card card-pad stack">
           <div>
-            <h2 className="section-title">초대 링크 입장</h2>
-            <p className="muted">여행에 참여할 이름과 다시 접속할 때 쓸 4자리 비밀번호 입력.</p>
-          </div>
-          <div className="field">
-            <label htmlFor="name">이름</label>
-            <input
-              id="name"
-              autoComplete="name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="이름"
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="pin">4자리 비밀번호</label>
-            <input
-              id="pin"
-              inputMode="numeric"
-              maxLength={4}
-              value={pin}
-              onChange={(event) => setPin(event.target.value.replace(/\D/g, ""))}
-              placeholder="0000"
-              type="password"
-            />
+            <h2 className="section-title">초대 확인</h2>
+            <p className="muted">로그인 이메일이 멤버 목록에 있으면 여행에 참여된다.</p>
           </div>
           {error && <p className="error">{error}</p>}
-          <button className="btn" disabled={pending} type="submit">
-            {pending ? "확인 중" : "입장"}
+          <button className="btn" disabled={pending} onClick={join} type="button">
+            {pending ? "확인 중" : "초대 확인"}
           </button>
-        </form>
+        </section>
       </section>
     </main>
   );
