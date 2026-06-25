@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /trips/{tripId} {
+      allow read: if true;
+      allow write: if false;
+
+      match /participants/{participantId} {
+        allow read: if true;
+        allow create, update: if true;
+        allow delete: if false;
+      }
+
+      match /todos/{todoId} {
+        allow read: if true;
+        allow create, update, delete: if true;
+      }
+
+      match /mapSettings/{settingsId} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+  }
+}
