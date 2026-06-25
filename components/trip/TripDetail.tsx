@@ -34,6 +34,7 @@ export function TripDetail({ tripId, user }: { tripId: string; user: AppUser }) 
   const [accommodationAddress, setAccommodationAddress] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  const [previewCenter, setPreviewCenter] = useState<{ latitude: number; longitude: number } | undefined>();
   const [inviteEmail, setInviteEmail] = useState("");
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [deleteConfirm, setDeleteConfirm] = useState("");
@@ -50,6 +51,7 @@ export function TripDetail({ tripId, user }: { tripId: string; user: AppUser }) 
       setAccommodationAddress(payload.trip.accommodation.address);
       setLatitude(String(payload.trip.accommodation.latitude));
       setLongitude(String(payload.trip.accommodation.longitude));
+      setPreviewCenter(undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : "여행 정보를 불러오지 못했습니다.");
     }
@@ -184,7 +186,7 @@ export function TripDetail({ tripId, user }: { tripId: string; user: AppUser }) 
       </section>
 
       <section className="split">
-        <TripMap trip={trip} participants={participants} todos={todos} settings={settings} />
+        <TripMap trip={trip} participants={participants} todos={todos} settings={settings} previewCenter={previewCenter} />
         <div className="stack">
           <section className="card card-pad">
             <h2 className="section-title">숙소</h2>
@@ -258,8 +260,11 @@ export function TripDetail({ tripId, user }: { tripId: string; user: AppUser }) 
                 onSelect={(location) => {
                   setAccommodationName(location.label);
                   setAccommodationAddress(location.address);
-                  setLatitude(String(location.latitude));
-                  setLongitude(String(location.longitude));
+                  setLatitude(String(location.latitude ?? ""));
+                  setLongitude(String(location.longitude ?? ""));
+                  if (typeof location.latitude === "number" && typeof location.longitude === "number") {
+                    setPreviewCenter({ latitude: location.latitude, longitude: location.longitude });
+                  }
                 }}
               />
               <div className="form-grid">

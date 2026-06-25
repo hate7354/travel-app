@@ -4,18 +4,11 @@ type LocalSearchItem = {
   title?: string;
   roadAddress?: string;
   address?: string;
-  mapx?: string;
-  mapy?: string;
   category?: string;
 };
 
 function stripHtml(value = "") {
   return value.replace(/<[^>]+>/g, "");
-}
-
-function naverMapCoordToDecimal(value?: string) {
-  if (!value) return null;
-  return Number(value) / 10000000;
 }
 
 export async function GET(request: NextRequest) {
@@ -44,21 +37,11 @@ export async function GET(request: NextRequest) {
   }
 
   const data = (await response.json()) as { items?: LocalSearchItem[] };
-  const results = (data.items ?? [])
-    .map((item) => {
-      const latitude = naverMapCoordToDecimal(item.mapy);
-      const longitude = naverMapCoordToDecimal(item.mapx);
-      if (latitude === null || longitude === null) return null;
-
-      return {
-        label: stripHtml(item.title),
-        address: item.roadAddress || item.address || "",
-        latitude,
-        longitude,
-        category: item.category
-      };
-    })
-    .filter(Boolean);
+  const results = (data.items ?? []).map((item) => ({
+    label: stripHtml(item.title),
+    address: item.roadAddress || item.address || "",
+    category: item.category
+  }));
 
   return NextResponse.json({ results });
 }

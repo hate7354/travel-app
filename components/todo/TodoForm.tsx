@@ -91,8 +91,8 @@ export function TodoForm({
         onSelect={(location) => {
           setPlaceName(location.label);
           setAddress(location.address);
-          setLatitude(String(location.latitude));
-          setLongitude(String(location.longitude));
+          setLatitude(String(location.latitude ?? ""));
+          setLongitude(String(location.longitude ?? ""));
         }}
       />
       <div className="form-grid">

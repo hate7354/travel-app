@@ -1,7 +1,7 @@
 "use client";
 
 import { KeyboardEvent, useState } from "react";
-import { searchNaverPlaces, type NaverGeocodeResult } from "@/lib/naverGeocode";
+import { resolveNaverPlace, searchNaverPlaces, type NaverGeocodeResult } from "@/lib/naverGeocode";
 
 export function LocationSearch({
   label,
@@ -14,6 +14,7 @@ export function LocationSearch({
   const [results, setResults] = useState<NaverGeocodeResult[]>([]);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [resolvingKey, setResolvingKey] = useState("");
 
   async function submit() {
     if (!query.trim()) return;
@@ -28,6 +29,22 @@ export function LocationSearch({
       setError(err instanceof Error ? err.message : "주소 검색 실패");
     } finally {
       setPending(false);
+    }
+  }
+
+  async function selectResult(result: NaverGeocodeResult) {
+    const key = `${result.label}:${result.address}`;
+    setResolvingKey(key);
+    setError("");
+    try {
+      const resolved = await resolveNaverPlace(result);
+      onSelect(resolved);
+      setResults([]);
+      setQuery(resolved.label);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "좌표 확인 실패");
+    } finally {
+      setResolvingKey("");
     }
   }
 
@@ -68,26 +85,28 @@ export function LocationSearch({
       {error && <p className="error">{error}</p>}
       {results.length > 0 && (
         <ul className="list">
-          {results.map((result) => (
-            <li className="list-item" key={`${result.latitude}:${result.longitude}:${result.address}`}>
+          {results.map((result) => {
+            const key = `${result.label}:${result.address}`;
+            return (
+            <li className="list-item" key={key}>
               <button
                 className="plain-button"
                 type="button"
-                onClick={() => {
-                  onSelect(result);
-                  setResults([]);
-                  setQuery(result.label);
-                }}
+                onClick={() => selectResult(result)}
               >
                 <strong>{result.label}</strong>
                 {result.category && <span className="muted">{result.category}</span>}
                 {result.address && <span>{result.address}</span>}
-                <span className="muted">
-                  {result.latitude.toFixed(6)}, {result.longitude.toFixed(6)}
-                </span>
+                {resolvingKey === key && <span className="muted">좌표 확인 중</span>}
+                {typeof result.latitude === "number" && typeof result.longitude === "number" && (
+                  <span className="muted">
+                    {result.latitude.toFixed(6)}, {result.longitude.toFixed(6)}
+                  </span>
+                )}
               </button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>

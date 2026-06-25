@@ -11,12 +11,14 @@ export function TripMap({
   trip,
   participants,
   todos,
-  settings
+  settings,
+  previewCenter
 }: {
   trip: Trip;
   participants: Participant[];
   todos: TripTodo[];
   settings: MapSettings;
+  previewCenter?: { latitude: number; longitude: number };
 }) {
   const markers = createMapMarkers(trip, participants, todos, settings);
   const polylines = settings.showPolyline
@@ -37,8 +39,8 @@ export function TripMap({
   return (
     <NaverMap
       center={{
-        latitude: trip.accommodation.latitude,
-        longitude: trip.accommodation.longitude
+        latitude: previewCenter?.latitude ?? trip.accommodation.latitude,
+        longitude: previewCenter?.longitude ?? trip.accommodation.longitude
       }}
       markers={markers}
       polylines={polylines}

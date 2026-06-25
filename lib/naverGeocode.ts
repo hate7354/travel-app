@@ -5,8 +5,8 @@ import { loadNaverMapScript } from "./naverMapLoader";
 export type NaverGeocodeResult = {
   label: string;
   address: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   category?: string;
 };
 
@@ -73,4 +73,19 @@ export async function searchNaverPlaces(query: string): Promise<NaverGeocodeResu
   if (data.results?.length) return data.results;
 
   return searchNaverAddress(query);
+}
+
+export async function resolveNaverPlace(result: NaverGeocodeResult): Promise<NaverGeocodeResult> {
+  if (typeof result.latitude === "number" && typeof result.longitude === "number") return result;
+
+  const candidates = await searchNaverAddress(result.address || result.label);
+  const first = candidates[0];
+  if (!first) throw new Error("선택한 장소의 좌표를 찾지 못했습니다.");
+
+  return {
+    ...result,
+    address: result.address || first.address,
+    latitude: first.latitude,
+    longitude: first.longitude
+  };
 }
