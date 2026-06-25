@@ -7,6 +7,8 @@ export async function getTrips(): Promise<Trip[]> {
   if (!isFirebaseConfigured() || !db) return [sampleTrip];
 
   const snapshot = await getDocs(collection(db, "trips"));
+  if (snapshot.empty) return [sampleTrip];
+
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as Trip);
 }
 
@@ -14,7 +16,7 @@ export async function getTripById(tripId: string): Promise<Trip | null> {
   if (!isFirebaseConfigured() || !db) return tripId === sampleTrip.id ? sampleTrip : null;
 
   const snapshot = await getDoc(doc(db, "trips", tripId));
-  if (!snapshot.exists()) return null;
+  if (!snapshot.exists()) return tripId === sampleTrip.id ? sampleTrip : null;
 
   return { id: snapshot.id, ...snapshot.data() } as Trip;
 }

@@ -10,7 +10,7 @@ import {
   where
 } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "./firebase";
-import { sampleParticipants } from "./sampleData";
+import { sampleParticipants, sampleTrip } from "./sampleData";
 import type { Participant } from "@/types/participant";
 
 export async function getParticipants(tripId: string): Promise<Participant[]> {
@@ -19,6 +19,10 @@ export async function getParticipants(tripId: string): Promise<Participant[]> {
   }
 
   const snapshot = await getDocs(collection(db, "trips", tripId, "participants"));
+  if (snapshot.empty && tripId === sampleTrip.id) {
+    return sampleParticipants;
+  }
+
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as Participant);
 }
 
