@@ -9,6 +9,7 @@ import {
   updateDoc,
   where
 } from "firebase/firestore";
+import { withFirebaseReadFallback } from "./firebaseFallback";
 import { db, isFirebaseConfigured } from "./firebase";
 import { sampleParticipants, sampleTrip } from "./sampleData";
 import type { Participant } from "@/types/participant";
@@ -18,12 +19,17 @@ export async function getParticipants(tripId: string): Promise<Participant[]> {
     return sampleParticipants.filter((participant) => participant.tripId === tripId);
   }
 
-  const snapshot = await getDocs(collection(db, "trips", tripId, "participants"));
-  if (snapshot.empty && tripId === sampleTrip.id) {
-    return sampleParticipants;
-  }
+  const fallback = tripId === sampleTrip.id ? sampleParticipants : [];
+  return withFirebaseReadFallback(
+    getDocs(collection(db, "trips", tripId, "participants")).then((snapshot) => {
+      if (snapshot.empty && tripId === sampleTrip.id) {
+        return sampleParticipants;
+      }
 
-  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as Participant);
+      return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as Participant);
+    }),
+    fallback
+  );
 }
 
 export async function getParticipantByNameKey(tripId: string, nameKey: string) {
@@ -36,10 +42,14 @@ export async function getParticipantByNameKey(tripId: string, nameKey: string) {
     where("nameKey", "==", nameKey),
     limit(1)
   );
-  const snapshot = await getDocs(q);
-  const item = snapshot.docs[0];
+  return withFirebaseReadFallback(
+    getDocs(q).then((snapshot) => {
+      const item = snapshot.docs[0];
 
-  return item ? ({ id: item.id, ...item.data() } as Participant) : null;
+      return item ? ({ id: item.id, ...item.data() } as Participant) : null;
+    }),
+    null
+  );
 }
 
 export async function createParticipant(
