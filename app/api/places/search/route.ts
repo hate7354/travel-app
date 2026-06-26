@@ -16,8 +16,8 @@ type LocalSearchItem = {
 type PlaceSearchResult = {
   label: string;
   address: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   category: string;
 };
 
@@ -25,22 +25,12 @@ function stripHtml(value = "") {
   return value.replace(/<[^>]+>/g, "");
 }
 
-function toLocalSearchCoordinate(value?: string) {
-  const numericValue = Number(value);
-  if (!Number.isFinite(numericValue)) return null;
-
-  return numericValue / 10000000;
-}
-
 function uniqueResults(results: PlaceSearchResult[]) {
   const seen = new Set<string>();
   return results.filter((result) => {
-    const key = [
-      result.label,
-      result.address,
-      result.latitude.toFixed(6),
-      result.longitude.toFixed(6)
-    ].join(":");
+    const key = [result.label, result.address, result.latitude?.toFixed(6) ?? "", result.longitude?.toFixed(6) ?? ""].join(
+      ":"
+    );
 
     if (seen.has(key)) return false;
     seen.add(key);
@@ -69,22 +59,17 @@ async function searchPlaces(query: string): Promise<PlaceSearchResult[]> {
 
   const data = (await response.json()) as { items?: LocalSearchItem[] };
   return (data.items ?? [])
-    .map((item) => {
-      const latitude = toLocalSearchCoordinate(item.mapy);
-      const longitude = toLocalSearchCoordinate(item.mapx);
+    .flatMap((item) => {
       const label = stripHtml(item.title || item.roadAddress || item.address || "");
       const address = item.roadAddress || item.address || "";
-      if (latitude === null || longitude === null || !label || !address) return null;
+      if (!label || !address) return [];
 
-      return {
+      return [{
         label,
         address,
-        latitude,
-        longitude,
         category: stripHtml(item.category || "장소")
-      };
-    })
-    .filter((item): item is PlaceSearchResult => item !== null);
+      }];
+    });
 }
 
 async function searchAddresses(query: string): Promise<PlaceSearchResult[]> {
@@ -108,21 +93,20 @@ async function searchAddresses(query: string): Promise<PlaceSearchResult[]> {
 
   const data = (await response.json()) as { addresses?: LocalSearchItem[] };
   return (data.addresses ?? [])
-    .map((item) => {
+    .flatMap((item) => {
       const latitude = Number(item.y);
       const longitude = Number(item.x);
       const address = item.roadAddress || item.jibunAddress || item.englishAddress || "";
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !address) return null;
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !address) return [];
 
-      return {
+      return [{
         label: stripHtml(address),
         address,
         latitude,
         longitude,
         category: item.roadAddress ? "도로명 주소" : "지번 주소"
-      };
-    })
-    .filter((item): item is PlaceSearchResult => item !== null);
+      }];
+    });
 }
 
 export async function GET(request: NextRequest) {
