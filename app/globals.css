@@ -36,6 +36,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 a {
   color: inherit;
 }
@@ -144,16 +149,21 @@ a {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  align-items: center;
+  align-items: flex-end;
 }
 
 .grow {
   flex: 1 1 240px;
+  min-width: 0;
 }
 
 .btn {
   display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 96px;
   min-height: 40px;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -162,6 +172,9 @@ a {
   background: var(--brand);
   color: white;
   font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .btn.secondary {
@@ -175,6 +188,8 @@ a {
 
 .tabs {
   display: inline-flex;
+  max-width: 100%;
+  flex: 0 0 auto;
   gap: 6px;
   padding: 4px;
   border: 1px solid var(--line);
@@ -183,12 +198,17 @@ a {
 }
 
 .tab-button {
+  display: inline-flex;
   min-height: 34px;
+  align-items: center;
+  justify-content: center;
   padding: 0 12px;
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
   font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .tab-button.active {
@@ -251,6 +271,7 @@ a {
 .plain-button {
   display: grid;
   width: 100%;
+  min-width: 0;
   gap: 4px;
   padding: 0;
   background: transparent;
@@ -348,6 +369,22 @@ a {
 @media (max-width: 860px) {
   .split {
     grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    align-items: stretch;
+  }
+
+  .toolbar .btn {
+    flex: 1 1 140px;
+  }
+
+  .tabs {
+    width: 100%;
+  }
+
+  .tab-button {
+    flex: 1 1 0;
   }
 
   .map-frame,

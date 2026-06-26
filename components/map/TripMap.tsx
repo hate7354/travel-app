@@ -1,6 +1,6 @@
 "use client";
 
-import { createMapMarkers } from "@/lib/markers";
+import { createMapMarkers, hasAccommodationLocation } from "@/lib/markers";
 import type { MapSettings } from "@/types/map";
 import type { Participant } from "@/types/participant";
 import type { Trip } from "@/types/trip";
@@ -21,7 +21,7 @@ export function TripMap({
   previewCenter?: { latitude: number; longitude: number };
 }) {
   const markers = createMapMarkers(trip, participants, todos, settings);
-  const polylines = settings.showPolyline
+  const polylines = settings.showPolyline && hasAccommodationLocation(trip)
     ? participants
         .filter((participant) => participant.startLocation)
         .map((participant) => [

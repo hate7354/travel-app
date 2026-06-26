@@ -4,14 +4,27 @@ import type { Participant } from "@/types/participant";
 import type { Trip } from "@/types/trip";
 import type { TripTodo } from "@/types/todo";
 
+function hasValidCoordinates(location: {
+  latitude?: number;
+  longitude?: number;
+}): location is { latitude: number; longitude: number } {
+  return Number.isFinite(location.latitude) && Number.isFinite(location.longitude);
+}
+
+export function hasAccommodationLocation(trip: Trip) {
+  return Boolean(trip.accommodation.address.trim()) && hasValidCoordinates(trip.accommodation);
+}
+
 export function createMapMarkers(
   trip: Trip,
   participants: Participant[],
   todos: TripTodo[],
   mapSettings: MapSettings
 ): MapMarker[] {
-  const markers: MapMarker[] = [
-    {
+  const markers: MapMarker[] = [];
+
+  if (hasAccommodationLocation(trip)) {
+    markers.push({
       id: `${trip.id}:accommodation`,
       type: "accommodation",
       label: "숙소",
@@ -19,11 +32,11 @@ export function createMapMarkers(
       longitude: trip.accommodation.longitude,
       color: mapSettings.accommodationMarkerColor,
       description: trip.accommodation.name
-    }
-  ];
+    });
+  }
 
   participants.forEach((participant) => {
-    if (!participant.startLocation) return;
+    if (!participant.startLocation || !hasValidCoordinates(participant.startLocation)) return;
     markers.push({
       id: participant.id,
       type: "participant",
@@ -50,7 +63,7 @@ export function createMapMarkers(
 
   if (mapSettings.showTodoMarkers) {
     todos.forEach((todo) => {
-      if (!todo.location?.latitude || !todo.location.longitude) return;
+      if (!todo.location || !hasValidCoordinates(todo.location)) return;
       markers.push({
         id: todo.id,
         type: "todo",
