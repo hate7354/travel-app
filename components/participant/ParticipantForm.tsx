@@ -8,10 +8,12 @@ import { LocationSearch } from "../map/LocationSearch";
 export function ParticipantForm({
   tripId,
   participant,
+  onLocationPreview,
   onSaved
 }: {
   tripId: string;
   participant: Participant;
+  onLocationPreview?: (location: { latitude: number; longitude: number }) => void;
   onSaved: () => void;
 }) {
   const [address, setAddress] = useState(participant.startLocation?.address ?? "");
@@ -79,6 +81,9 @@ export function ParticipantForm({
           setAddress(location.address);
           setLatitude(String(location.latitude ?? ""));
           setLongitude(String(location.longitude ?? ""));
+          if (typeof location.latitude === "number" && typeof location.longitude === "number") {
+            onLocationPreview?.({ latitude: location.latitude, longitude: location.longitude });
+          }
         }}
       />
       <div className="form-grid">

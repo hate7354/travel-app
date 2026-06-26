@@ -312,9 +312,14 @@ export function TripDetail({ tripId, user }: { tripId: string; user: AppUser }) 
           <section className="split">
             <div className="stack">
               <TodoList todos={todos} />
-              <TodoForm tripId={tripId} todosCount={todos.length} onSaved={load} />
+              <TodoForm tripId={tripId} todosCount={todos.length} onLocationPreview={setPreviewCenter} onSaved={load} />
             </div>
-            <ParticipantForm tripId={tripId} participant={currentParticipant} onSaved={load} />
+            <ParticipantForm
+              tripId={tripId}
+              participant={currentParticipant}
+              onLocationPreview={setPreviewCenter}
+              onSaved={load}
+            />
           </section>
 
           <section className="card card-pad stack">

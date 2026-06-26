@@ -7,10 +7,12 @@ import { LocationSearch } from "../map/LocationSearch";
 export function TodoForm({
   tripId,
   todosCount,
+  onLocationPreview,
   onSaved
 }: {
   tripId: string;
   todosCount: number;
+  onLocationPreview?: (location: { latitude: number; longitude: number }) => void;
   onSaved: () => void;
 }) {
   const [title, setTitle] = useState("");
@@ -93,6 +95,9 @@ export function TodoForm({
           setAddress(location.address);
           setLatitude(String(location.latitude ?? ""));
           setLongitude(String(location.longitude ?? ""));
+          if (typeof location.latitude === "number" && typeof location.longitude === "number") {
+            onLocationPreview?.({ latitude: location.latitude, longitude: location.longitude });
+          }
         }}
       />
       <div className="form-grid">
