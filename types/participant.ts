@@ -1,6 +1,6 @@
 import type { FirestoreDate } from "./trip";
 
-export type ParticipantRole = "owner" | "member";
+export type ParticipantRole = "admin" | "member" | "viewer";
 
 export type Participant = {
   id: string;

@@ -1,17 +1,21 @@
 export type AppUser = {
   id: string;
-  email: string;
+  username: string;
+  email?: string;
   name: string;
   createdAt: string;
   updatedAt: string;
 };
 
+export type TripMemberRole = "admin" | "member" | "viewer";
+
 export type TripMember = {
   id: string;
   tripId: string;
   userId?: string;
-  email: string;
-  role: "owner" | "member";
+  username: string;
+  email?: string;
+  role: TripMemberRole;
   status: "active" | "invited";
   createdAt: string;
   updatedAt: string;

@@ -9,7 +9,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const { tripId } = await params;
   const member = await joinInvitedTrip(tripId, user);
-  if (!member) return NextResponse.json({ error: "초대된 이메일이 아닙니다." }, { status: 403 });
+  if (!member) return NextResponse.json({ error: "여행을 찾을 수 없습니다." }, { status: 404 });
 
   return NextResponse.json({ member });
 }

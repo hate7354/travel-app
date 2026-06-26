@@ -57,7 +57,7 @@ export async function joinTripWithNameAndPin(tripId: string, name: string, pin: 
   const participants = await getParticipants(tripId);
   const salt = createPinSalt();
   const pinHash = await hashPin({ tripId, nameKey, pin, salt });
-  const role = participants.length === 0 ? "owner" : "member";
+  const role = participants.length === 0 ? "admin" : "member";
   const participantId = await createParticipant(tripId, {
     tripId,
     name: normalizedName,
@@ -65,7 +65,7 @@ export async function joinTripWithNameAndPin(tripId: string, name: string, pin: 
     pinHash,
     pinSalt: salt,
     markerLabel: normalizedName.slice(0, 1),
-    markerColor: role === "owner" ? "#136f63" : "#d88c3d",
+    markerColor: role === "admin" ? "#136f63" : "#d88c3d",
     role
   });
 

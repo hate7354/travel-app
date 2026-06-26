@@ -28,13 +28,13 @@ export function InviteLoginForm({ tripId }: { tripId: string }) {
         <div className="hero">
           <div>
             <h1>여행 초대</h1>
-            <p>초대된 이메일 계정만 입장 가능.</p>
+            <p>초대 링크로 보기 권한을 받을 수 있다.</p>
           </div>
         </div>
         <section className="card card-pad stack">
           <div>
             <h2 className="section-title">초대 확인</h2>
-            <p className="muted">로그인 이메일이 멤버 목록에 있으면 여행에 참여된다.</p>
+            <p className="muted">초대된 아이디면 해당 권한으로, 아니면 보기 전용으로 여행 목록에 추가된다.</p>
           </div>
           {error && <p className="error">{error}</p>}
           <button className="btn" disabled={pending} onClick={join} type="button">

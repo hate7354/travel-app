@@ -9,6 +9,7 @@ export function AuthGate({ children }: { children: (user: AppUser, onLogout: () 
   const [user, setUser] = useState<AppUser | null>(null);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(true);
@@ -27,7 +28,7 @@ export function AuthGate({ children }: { children: (user: AppUser, onLogout: () 
     try {
       const data = await api<{ user: AppUser }>(mode === "login" ? "/api/auth/login" : "/api/auth/register", {
         method: "POST",
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({ name, username, email, password })
       });
       setUser(data.user);
     } catch (err) {
@@ -58,24 +59,36 @@ export function AuthGate({ children }: { children: (user: AppUser, onLogout: () 
         <form className="card card-pad stack" onSubmit={submit}>
           <div>
             <h2 className="section-title">{mode === "login" ? "로그인" : "회원가입"}</h2>
-            <p className="muted">MongoDB Atlas 키가 없으면 임시 메모리 저장으로 동작.</p>
+            <p className="muted">아이디로 로그인.</p>
           </div>
-          {mode === "register" && (
-            <div className="field">
-              <label htmlFor="authName">이름</label>
-              <input id="authName" value={name} onChange={(event) => setName(event.target.value)} />
-            </div>
-          )}
           <div className="field">
-            <label htmlFor="authEmail">이메일</label>
+            <label htmlFor="authUsername">아이디</label>
             <input
-              id="authEmail"
-              autoComplete="email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              id="authUsername"
+              autoComplete="username"
+              required
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
             />
           </div>
+          {mode === "register" && (
+            <>
+              <div className="field">
+                <label htmlFor="authName">이름</label>
+                <input id="authName" value={name} onChange={(event) => setName(event.target.value)} />
+              </div>
+              <div className="field">
+                <label htmlFor="authEmail">이메일</label>
+                <input
+                  id="authEmail"
+                  autoComplete="email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+              </div>
+            </>
+          )}
           <div className="field">
             <label htmlFor="authPassword">비밀번호</label>
             <input

@@ -42,7 +42,7 @@ export const sampleParticipants: Participant[] = [
     departureTime: "10:00",
     markerLabel: "민",
     markerColor: "#136f63",
-    role: "owner",
+    role: "admin",
     createdAt: null,
     updatedAt: null
   },

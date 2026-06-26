@@ -6,7 +6,7 @@ import type { MapSettings } from "@/types/map";
 import type { Participant } from "@/types/participant";
 import type { Trip } from "@/types/trip";
 import type { TripTodo } from "@/types/todo";
-import type { AppUser, TripMember } from "@/types/user";
+import type { AppUser, TripMember, TripMemberRole } from "@/types/user";
 
 type StoredUser = AppUser & {
   passwordHash: string;
@@ -27,6 +27,10 @@ function now() {
   return new Date().toISOString();
 }
 
+function normalizeUsername(value: string) {
+  return value.trim().toLowerCase();
+}
+
 function memory() {
   globalForStore.travelMemoryStore ??= {
     users: [],
@@ -42,22 +46,57 @@ function memory() {
 
 function publicUser(user: StoredUser): AppUser {
   const { passwordHash: _passwordHash, ...safeUser } = user;
-  return safeUser;
+  return {
+    ...safeUser,
+    username: safeUser.username || safeUser.email || safeUser.id
+  };
 }
 
-export async function createUser(input: { email: string; name: string; password: string }) {
-  const email = input.email.trim().toLowerCase();
+function isEditableRole(role: TripMemberRole) {
+  return role === "admin" || role === "member";
+}
+
+function findActiveMember(members: TripMember[], tripId: string, user: AppUser) {
+  return members.find(
+    (item) =>
+      item.tripId === tripId &&
+      item.status === "active" &&
+      (item.userId === user.id || item.username === user.username || (!!user.email && item.email === user.email))
+  );
+}
+
+async function getActiveMember(tripId: string, user: AppUser) {
+  const db = await getMongoDb();
+  if (db) {
+    return db.collection<TripMember>("members").findOne({
+      tripId,
+      status: "active",
+      $or: [
+        { userId: user.id },
+        { username: user.username },
+        ...(user.email ? [{ email: user.email }] : [])
+      ]
+    });
+  }
+
+  return findActiveMember(memory().members, tripId, user);
+}
+
+export async function createUser(input: { username: string; email?: string; name: string; password: string }) {
+  const username = normalizeUsername(input.username);
+  const email = input.email?.trim().toLowerCase() || undefined;
   const timestamp = now();
   const db = await getMongoDb();
 
   if (db) {
-    const existing = await db.collection<StoredUser>("users").findOne({ email });
-    if (existing) throw new Error("이미 가입된 이메일입니다.");
+    const existing = await db.collection<StoredUser>("users").findOne({ username });
+    if (existing) throw new Error("이미 가입된 아이디입니다.");
 
     const user: StoredUser = {
       id: randomUUID(),
+      username,
       email,
-      name: input.name.trim() || email,
+      name: input.name.trim() || username,
       passwordHash: hashPassword(input.password),
       createdAt: timestamp,
       updatedAt: timestamp
@@ -67,12 +106,13 @@ export async function createUser(input: { email: string; name: string; password:
   }
 
   const store = memory();
-  if (store.users.some((user) => user.email === email)) throw new Error("이미 가입된 이메일입니다.");
+  if (store.users.some((user) => user.username === username)) throw new Error("이미 가입된 아이디입니다.");
 
   const user: StoredUser = {
     id: randomUUID(),
+    username,
     email,
-    name: input.name.trim() || email,
+    name: input.name.trim() || username,
     passwordHash: hashPassword(input.password),
     createdAt: timestamp,
     updatedAt: timestamp
@@ -81,15 +121,15 @@ export async function createUser(input: { email: string; name: string; password:
   return publicUser(user);
 }
 
-export async function loginUser(input: { email: string; password: string }) {
-  const email = input.email.trim().toLowerCase();
+export async function loginUser(input: { username: string; password: string }) {
+  const username = normalizeUsername(input.username);
   const db = await getMongoDb();
   const user = db
-    ? await db.collection<StoredUser>("users").findOne({ email })
-    : memory().users.find((item) => item.email === email);
+    ? await db.collection<StoredUser>("users").findOne({ $or: [{ username }, { email: username }] })
+    : memory().users.find((item) => item.username === username || item.email === username);
 
   if (!user || !verifyPassword(input.password, user.passwordHash)) {
-    throw new Error("이메일 또는 비밀번호가 맞지 않습니다.");
+    throw new Error("아이디 또는 비밀번호가 맞지 않습니다.");
   }
 
   return publicUser(user);
@@ -109,7 +149,14 @@ export async function listTripsForUser(user: AppUser) {
   if (db) {
     const memberships = await db
       .collection<TripMember>("members")
-      .find({ email: user.email, status: "active" })
+      .find({
+        status: "active",
+        $or: [
+          { userId: user.id },
+          { username: user.username },
+          ...(user.email ? [{ email: user.email }] : [])
+        ]
+      })
       .toArray();
     const ids = memberships.map((member) => member.tripId);
     if (ids.length === 0) return [];
@@ -118,7 +165,11 @@ export async function listTripsForUser(user: AppUser) {
 
   const store = memory();
   const ids = store.members
-    .filter((member) => member.email === user.email && member.status === "active")
+    .filter(
+      (member) =>
+        member.status === "active" &&
+        (member.userId === user.id || member.username === user.username || (!!user.email && member.email === user.email))
+    )
     .map((member) => member.tripId);
   return store.trips.filter((trip) => ids.includes(trip.id));
 }
@@ -156,8 +207,9 @@ export async function createTripForUser(user: AppUser, input: Partial<Trip>) {
     id: randomUUID(),
     tripId,
     userId: user.id,
+    username: user.username,
     email: user.email,
-    role: "owner",
+    role: "admin",
     status: "active",
     createdAt: timestamp,
     updatedAt: timestamp
@@ -179,9 +231,7 @@ export async function createTripForUser(user: AppUser, input: Partial<Trip>) {
 
 export async function getTripForUser(tripId: string, user: AppUser) {
   const db = await getMongoDb();
-  const member = db
-    ? await db.collection<TripMember>("members").findOne({ tripId, email: user.email, status: "active" })
-    : memory().members.find((item) => item.tripId === tripId && item.email === user.email && item.status === "active");
+  const member = await getActiveMember(tripId, user);
 
   if (!member) return null;
 
@@ -210,6 +260,7 @@ export async function getTripForUser(tripId: string, user: AppUser) {
 export async function updateTripForUser(tripId: string, user: AppUser, input: Partial<Trip>) {
   const data = await getTripForUser(tripId, user);
   if (!data) return null;
+  if (!isEditableRole(data.currentMember.role)) throw new Error("수정 권한이 없습니다.");
 
   const updated = {
     ...data.trip,
@@ -233,6 +284,7 @@ export async function updateTripForUser(tripId: string, user: AppUser, input: Pa
 export async function deleteTripForUser(tripId: string, user: AppUser) {
   const data = await getTripForUser(tripId, user);
   if (!data) return false;
+  if (data.currentMember.role !== "admin") throw new Error("관리자만 삭제할 수 있습니다.");
 
   const db = await getMongoDb();
   if (db) {
@@ -255,17 +307,24 @@ export async function deleteTripForUser(tripId: string, user: AppUser) {
   return true;
 }
 
-export async function inviteMember(tripId: string, user: AppUser, emailInput: string) {
+export async function inviteMember(
+  tripId: string,
+  user: AppUser,
+  usernameInput: string,
+  roleInput: TripMemberRole = "member"
+) {
   const data = await getTripForUser(tripId, user);
   if (!data) return null;
+  if (data.currentMember.role !== "admin") throw new Error("관리자만 초대할 수 있습니다.");
 
-  const email = emailInput.trim().toLowerCase();
+  const username = normalizeUsername(usernameInput);
+  const role = roleInput === "admin" ? "admin" : "member";
   const timestamp = now();
   const member: TripMember = {
     id: randomUUID(),
     tripId,
-    email,
-    role: "member",
+    username,
+    role,
     status: "invited",
     createdAt: timestamp,
     updatedAt: timestamp
@@ -273,12 +332,12 @@ export async function inviteMember(tripId: string, user: AppUser, emailInput: st
 
   const db = await getMongoDb();
   if (db) {
-    const existing = await db.collection<TripMember>("members").findOne({ tripId, email });
+    const existing = await db.collection<TripMember>("members").findOne({ tripId, username });
     if (existing) return existing;
     await db.collection("members").insertOne(member);
   } else {
     const store = memory();
-    const existing = store.members.find((item) => item.tripId === tripId && item.email === email);
+    const existing = store.members.find((item) => item.tripId === tripId && item.username === username);
     if (existing) return existing;
     store.members.push(member);
   }
@@ -291,18 +350,66 @@ export async function joinInvitedTrip(tripId: string, user: AppUser) {
   const timestamp = now();
 
   if (db) {
-    const member = await db.collection<TripMember>("members").findOne({ tripId, email: user.email });
-    if (!member) return null;
+    const trip = await db.collection<Trip>("trips").findOne({ id: tripId });
+    if (!trip) return null;
+    const member = await db.collection<TripMember>("members").findOne({
+      tripId,
+      $or: [
+        { userId: user.id },
+        { username: user.username },
+        ...(user.email ? [{ email: user.email }] : [])
+      ]
+    });
+    if (!member) {
+      const viewer: TripMember = {
+        id: randomUUID(),
+        tripId,
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+        role: "viewer",
+        status: "active",
+        createdAt: timestamp,
+        updatedAt: timestamp
+      };
+      await db.collection("members").insertOne(viewer);
+      return viewer;
+    }
     await db
       .collection("members")
-      .updateOne({ id: member.id }, { $set: { userId: user.id, status: "active", updatedAt: timestamp } });
-    return { ...member, userId: user.id, status: "active" as const, updatedAt: timestamp };
+      .updateOne(
+        { id: member.id },
+        { $set: { userId: user.id, username: user.username, email: user.email, status: "active", updatedAt: timestamp } }
+      );
+    return { ...member, userId: user.id, username: user.username, email: user.email, status: "active" as const, updatedAt: timestamp };
   }
 
   const store = memory();
-  const member = store.members.find((item) => item.tripId === tripId && item.email === user.email);
-  if (!member) return null;
+  const trip = store.trips.find((item) => item.id === tripId);
+  if (!trip) return null;
+  const member = store.members.find(
+    (item) =>
+      item.tripId === tripId &&
+      (item.userId === user.id || item.username === user.username || (!!user.email && item.email === user.email))
+  );
+  if (!member) {
+    const viewer: TripMember = {
+      id: randomUUID(),
+      tripId,
+      userId: user.id,
+      username: user.username,
+      email: user.email,
+      role: "viewer",
+      status: "active",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+    store.members.push(viewer);
+    return viewer;
+  }
   member.userId = user.id;
+  member.username = user.username;
+  member.email = user.email;
   member.status = "active";
   member.updatedAt = timestamp;
   return member;
@@ -311,6 +418,7 @@ export async function joinInvitedTrip(tripId: string, user: AppUser) {
 export async function addTodoForUser(tripId: string, user: AppUser, input: Partial<TripTodo>) {
   const data = await getTripForUser(tripId, user);
   if (!data) return null;
+  if (!isEditableRole(data.currentMember.role)) throw new Error("수정 권한이 없습니다.");
 
   const timestamp = now();
   const todo: TripTodo = {
@@ -336,14 +444,17 @@ export async function addTodoForUser(tripId: string, user: AppUser, input: Parti
 export async function updateMyParticipant(tripId: string, user: AppUser, input: Partial<Participant>) {
   const data = await getTripForUser(tripId, user);
   if (!data) return null;
+  if (!isEditableRole(data.currentMember.role)) throw new Error("수정 권한이 없습니다.");
 
   const timestamp = now();
-  const existing = data.participants.find((participant) => participant.nameKey === user.email);
+  const existing = data.participants.find(
+    (participant) => participant.nameKey === user.username || (!!user.email && participant.nameKey === user.email)
+  );
   const participant: Participant = {
     id: existing?.id || randomUUID(),
     tripId,
     name: user.name,
-    nameKey: user.email,
+    nameKey: user.username,
     pinHash: "",
     pinSalt: "",
     markerLabel: user.name.slice(0, 1) || "U",

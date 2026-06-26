@@ -3,7 +3,8 @@ import type { NextRequest } from "next/server";
 
 export type SessionPayload = {
   userId: string;
-  email: string;
+  username: string;
+  email?: string;
   name: string;
   exp: number;
 };

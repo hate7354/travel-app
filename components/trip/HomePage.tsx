@@ -55,7 +55,7 @@ export function HomePage({ user, onLogout }: { user: AppUser; onLogout: () => vo
       </section>
 
       <section className="card card-pad toolbar">
-        <p className="muted">{user.email}</p>
+        <p className="muted">{user.username}</p>
         <button className="btn secondary" onClick={onLogout} type="button">
           로그아웃
         </button>
